@@ -5,7 +5,9 @@ logs/
 
 # Visual Studio files and folder
 .vs/
+.vscode/
 **.sln
+**.slnx
 **.vcxproj
 **.vcxproj.filters
 **.vcxproj.user

@@ -1,85 +1,21 @@
-#include <pybind11/pybind11.h>
+#include "PyyamlTypes.h"
+#include "PyyamlFunctions.h"
 
-#include <yaml-cpp/yaml.h>
 
-inline YAML::Emitter& operator<<(YAML::Emitter& inEmitter, const pybind11::object& inObject)
-{
-	if (pybind11::isinstance<pybind11::bool_>(inObject))
-	{
-		return inEmitter << inObject.cast<bool>();
-	}
-	else if (pybind11::isinstance<pybind11::int_>(inObject))
-	{
-		return inEmitter << inObject.cast<int64_t>();
-	}
-	else if (pybind11::isinstance<pybind11::float_>(inObject))
-	{
-		return inEmitter << inObject.cast<double>();
-	}
-	else if (pybind11::isinstance<pybind11::str>(inObject))
-	{
-		return inEmitter << inObject.cast<std::string>();
-	}
-	else if (pybind11::hasattr(inObject, "__yaml_emit__"))
-	{
-		return inObject.attr("__yaml_emit__")(inEmitter).cast<YAML::Emitter&>();
-	}
-
-	pybind11::pybind11_fail("Object must has \"__yaml_emit__\" function");
-}
-
-inline void operator>>(YAML::Node& inNode, pybind11::object& inObject)
-{
-	if (pybind11::isinstance<pybind11::bool_>(inObject))
-	{
-		inObject = pybind11::cast(inNode.as<bool>());
-		return;
-	}
-	else if (pybind11::isinstance<pybind11::int_>(inObject))
-	{
-		inObject = pybind11::cast(inNode.as<int64_t>());
-		return;
-	}
-	else if (pybind11::isinstance<pybind11::float_>(inObject))
-	{
-		inObject = pybind11::cast(inNode.as<float>());
-		return;
-	}
-	else if (pybind11::isinstance<pybind11::str>(inObject))
-	{
-		inObject = pybind11::cast(inNode.as<std::string>());
-		return;
-	}
-	else if (pybind11::hasattr(inObject, "__yaml_load__"))
-	{
-		inObject.attr("__yaml_load__")(inNode);
-		return;
-	}
-
-	pybind11::pybind11_fail("Object must has \"__yaml_load__\" function");
-}
-
-// namespaces
-namespace py = pybind11;
-
-// yaml names
-using EmitterManip = YAML::EMITTER_MANIP;
-using Emitter = YAML::Emitter;
-using Node = YAML::Node;
 
 PYBIND11_MODULE(yamlcxx, m)
 {
 	py::class_<Node>(m, "Node")
-		.def("as_bool", &Node::as<bool>)
-		.def("as_int", &Node::as<int>)
-		.def("as_float", &Node::as<double>)
-		.def("as_str", &Node::as<std::string>)
+		.def("as_bool",		&Node::as<bool>)
+		.def("as_int",		&Node::as<int>)
+		.def("as_float",	&Node::as<double>)
+		.def("as_str",		&Node::as<std::string>)
 
-		.def("WriteTo", [](Node& self, py::object& inObject) { self >> inObject; }, py::arg("inObject"))
+		.def("WriteTo",		&Node_RShift, py::arg("inObject"))
 
-		.def("__rshift__", [](Node& self, py::object& inObject) { self >> inObject; }, py::arg("inObject"))
-		.def("__getitem__", [](Node& self, const std::string& inKey) -> Node { return self[inKey]; }, py::arg("inKey"))
-		.def("__getitem__", [](Node& self, const int inKey) -> Node { return self[inKey]; }, py::arg("inKey"));
+		.def("__rshift__",	&Node_RShift, py::arg("inObject"))
+		.def("__getitem__", &Node_GetItem<const std::string&>, py::arg("inKey"))
+		.def("__getitem__", &Node_GetItem<int>, py::arg("inKey"));
 
 
 	py::enum_<EmitterManip>(m, "EMITTER_MANIP")
@@ -144,60 +80,34 @@ PYBIND11_MODULE(yamlcxx, m)
 	py::class_<Emitter>(m, "Emitter")
 		.def(py::init<>())
 
-		.def("c_str", [](const Emitter& self) { return py::str(self.c_str()); })
-		.def("size", &Emitter::size)
+		.def("c_str",							&Emitter_CStr)
+		.def("size",							&Emitter::size)
 
-		.def("good", &Emitter::good)
-		.def("GetLastError", &Emitter::GetLastError)
+		.def("good",							&Emitter::good)
+		.def("GetLastError",					&Emitter::GetLastError)
 
-		.def("SetOutputCharset", &Emitter::SetOutputCharset)
-		.def("SetStringFormat", &Emitter::SetStringFormat)
-		.def("SetBoolFormat", &Emitter::SetBoolFormat)
-		.def("SetNullFormat", &Emitter::SetNullFormat)
-		.def("SetIntBase", &Emitter::SetIntBase)
-		.def("SetSeqFormat", &Emitter::SetSeqFormat)
-		.def("SetMapFormat", &Emitter::SetMapFormat)
-		.def("SetIndent", &Emitter::SetIndent)
-		.def("SetPreCommentIndent", &Emitter::SetPreCommentIndent)
-		.def("SetPostCommentIndent", &Emitter::SetPostCommentIndent)
-		.def("SetFloatPrecision", &Emitter::SetFloatPrecision)
-		.def("SetDoublePrecision", &Emitter::SetDoublePrecision)
-		.def("SetShowTrailingZero", &Emitter::SetShowTrailingZero)
-		.def("RestoreGlobalModifiedSettings", &Emitter::RestoreGlobalModifiedSettings)
+		.def("SetOutputCharset",				&Emitter::SetOutputCharset)
+		.def("SetStringFormat",					&Emitter::SetStringFormat)
+		.def("SetBoolFormat",					&Emitter::SetBoolFormat)
+		.def("SetNullFormat",					&Emitter::SetNullFormat)
+		.def("SetIntBase",						&Emitter::SetIntBase)
+		.def("SetSeqFormat",					&Emitter::SetSeqFormat)
+		.def("SetMapFormat",					&Emitter::SetMapFormat)
+		.def("SetIndent",						&Emitter::SetIndent)
+		.def("SetPreCommentIndent",				&Emitter::SetPreCommentIndent)
+		.def("SetPostCommentIndent",			&Emitter::SetPostCommentIndent)
+		.def("SetFloatPrecision",				&Emitter::SetFloatPrecision)
+		.def("SetDoublePrecision",				&Emitter::SetDoublePrecision)
+		.def("SetShowTrailingZero",				&Emitter::SetShowTrailingZero)
+		.def("RestoreGlobalModifiedSettings",	&Emitter::RestoreGlobalModifiedSettings)
 
-		.def("Start",
-			[](Emitter& self, const EmitterManip& inManip) -> Emitter&
-			{
-				return self << inManip;
-			}, py::arg("inManip"), py::return_value_policy::reference_internal)
-		.def("Type",
-			[](Emitter& self, const EmitterManip& inManip) -> Emitter&
-			{
-				return self << inManip;
-			}, py::arg("inManip"), py::return_value_policy::reference_internal)
-		.def("Value",
-			[](Emitter& self, const py::object& inObject) -> Emitter&
-			{
-				return self << inObject;
-			}, py::arg("inObject"), py::return_value_policy::reference_internal)
-		.def("End",
-			[](Emitter& self, const EmitterManip& inManip)
-			{
-				self << inManip;
-			}, py::arg("inManip"))
+		.def("Start",		&Emitter_LShift<EmitterManip>,			py::arg("inManip"),		py::return_value_policy::reference_internal)
+		.def("Type",		&Emitter_LShift<EmitterManip>,			py::arg("inManip"),		py::return_value_policy::reference_internal)
+		.def("Value",		&Emitter_LShift<const py::object&>,		py::arg("inObject"),	py::return_value_policy::reference_internal)
+		.def("End",			&Emitter_LShift_End,					py::arg("inManip"))
 
-
-
-		.def("__lshift__", 
-			[](Emitter& self, const EmitterManip& inManip) -> Emitter&
-			{
-				return self << inManip;
-			}, py::arg("inManip"), py::return_value_policy::reference_internal)
-		.def("__lshift__", 
-			[](Emitter& self, const py::object& inObject) -> Emitter&
-			{
-				return self << inObject;
-			}, py::arg("inObject"), py::return_value_policy::reference_internal);
+		.def("__lshift__",	&Emitter_LShift<EmitterManip>,			py::arg("inManip"),		py::return_value_policy::reference_internal)
+		.def("__lshift__",	&Emitter_LShift<const py::object&>,		py::arg("inObject"),	py::return_value_policy::reference_internal);
 	
 	m.def("Load", py::overload_cast<const std::string&>(&YAML::Load));
 }

@@ -1,12 +1,4 @@
-#include <pybind11/pybind11.h>
-
-#include <spdlog/spdlog.h>
-
-#include <spdlog/sinks/wincolor_sink.h>
-#include <sinks/wincolor_sink.cpp>
-
-#include <spdlog/sinks/basic_file_sink.h>
-#include <spdlog/sinks/stdout_color_sinks.h>
+#include "PyspdlogTypes.h"
 
 
 
@@ -144,42 +136,6 @@ public:
 
 
 
-// namespace
-namespace py = pybind11;
-
-// spdlog names
-using Level = spdlog::level;
-using ColorMode = spdlog::color_mode;
-using SourceLoc = spdlog::source_loc;
-using LogMsg = spdlog::details::log_msg;
-using TimePoint = spdlog::log_clock::time_point;
-using StringView = spdlog::string_view_t;
-
-using Formatter = spdlog::formatter;
-
-using Sink = spdlog::sinks::sink;
-using SinkPtr = spdlog::sink_ptr;
-using BaseSinkMt = spdlog::sinks::base_sink<std::mutex>;
-using BaseSinkSt = spdlog::sinks::base_sink<spdlog::details::null_mutex>;
-
-using BasicFileSinkMt = spdlog::sinks::basic_file_sink_mt;
-using BasicFileSinkSt = spdlog::sinks::basic_file_sink_st;
-
-#ifdef _WIN32
-	using ColorSinkMt = spdlog::sinks::wincolor_sink<std::mutex>;
-	using ColorSinkSt = spdlog::sinks::wincolor_sink<spdlog::details::null_mutex>;
-#else
-	using ColorSinkMt = spdlog::sinks::ansicolor_sink<std::mutex>;
-	using ColorSinkSt = spdlog::sinks::ansicolor_sink<spdlog::details::null_mutex>;
-#endif
-
-using StdoutColorSinkMt = spdlog::sinks::stdout_color_sink_mt;
-using StdoutColorSinkSt = spdlog::sinks::stdout_color_sink_st;
-
-using Logger = spdlog::logger;
-
-
-
 PYBIND11_MODULE(spdlogcxx, m)
 {
 	py::enum_<Level>(m, "level")
@@ -251,8 +207,9 @@ PYBIND11_MODULE(spdlogcxx, m)
 		.def("clone", &Formatter::clone);
 
 
-
-	py::class_<Sink, PySink, SinkPtr>(m, "sink")
+	
+	auto sinks = m.def_submodule("sinks");
+	py::class_<Sink, PySink, SinkPtr>(sinks, "sink")
 		.def(py::init())
 
 		.def("log",				&Sink::log)
@@ -265,7 +222,7 @@ PYBIND11_MODULE(spdlogcxx, m)
 
 
 
-	py::class_<BaseSinkMt, PyBaseSinkMt, std::shared_ptr<BaseSinkMt>>(m, "base_sink_mt", py::base<Sink>())
+	py::class_<BaseSinkMt, PyBaseSinkMt, std::shared_ptr<BaseSinkMt>>(sinks, "base_sink_mt", py::base<Sink>())
 		.def(py::init<>())
 		.def("sink_it_",		&PublicBaseSinkMt::sink_it_)
 		.def("flush_",			&PublicBaseSinkMt::flush_)
@@ -274,7 +231,7 @@ PYBIND11_MODULE(spdlogcxx, m)
 
 		.def_readwrite("formatter_", &PublicBaseSinkMt::formatter_);
 
-	py::class_<BaseSinkSt, PyBaseSinkSt, std::shared_ptr<BaseSinkSt>>(m, "base_sink_st", py::base<Sink>())
+	py::class_<BaseSinkSt, PyBaseSinkSt, std::shared_ptr<BaseSinkSt>>(sinks, "base_sink_st", py::base<Sink>())
 		.def(py::init<>())
 		.def("sink_it_",		&PublicBaseSinkSt::sink_it_)
 		.def("flush_",			&PublicBaseSinkSt::flush_)
@@ -285,36 +242,63 @@ PYBIND11_MODULE(spdlogcxx, m)
 
 
 
-	py::class_<BasicFileSinkMt, BaseSinkMt, std::shared_ptr<BasicFileSinkMt>>(m, "basic_file_sink_mt")
+	py::class_<BasicFileSinkMt, BaseSinkMt, std::shared_ptr<BasicFileSinkMt>>(sinks, "basic_file_sink_mt")
 		.def(py::init<const std::string&, bool>(), py::arg("inFileName"), py::arg("inbTruncate") = false)
 		
 		.def("filename", &BasicFileSinkMt::filename)
 		.def("truncate", &BasicFileSinkMt::truncate);
 
-	py::class_<BasicFileSinkSt, BaseSinkSt, std::shared_ptr<BasicFileSinkSt>>(m, "basic_file_sink_st")
+	py::class_<BasicFileSinkSt, BaseSinkSt, std::shared_ptr<BasicFileSinkSt>>(sinks, "basic_file_sink_st")
 		.def(py::init<const std::string&, bool>(), py::arg("inFileName"), py::arg("inbTruncate") = false)
 		
 		.def("filename", &BasicFileSinkSt::filename)
 		.def("truncate", &BasicFileSinkSt::truncate);
 
 
-
-	py::class_<ColorSinkMt, BaseSinkMt, std::shared_ptr<ColorSinkMt>>(m, "color_sink_mt")
+#ifdef _WIN32
+	py::class_<ColorSinkMt, BaseSinkMt, std::shared_ptr<ColorSinkMt>>(sinks, "color_sink_mt")
 		.def(py::init<py::capsule, ColorMode>(), py::arg("Handle"), py::arg("inMode"))
 
 		.def("set_color",		&ColorSinkMt::set_color)
 		.def("set_color_mode",	&ColorSinkMt::set_color_mode);
 
-	py::class_<ColorSinkSt, BaseSinkSt, std::shared_ptr<ColorSinkSt>>(m, "color_sink_st")
+	py::class_<ColorSinkSt, BaseSinkSt, std::shared_ptr<ColorSinkSt>>(sinks, "color_sink_st")
 		.def(py::init<py::capsule, ColorMode>(), py::arg("Handle"), py::arg("inMode"))
 
 		.def("set_color",		&ColorSinkSt::set_color)
 		.def("set_color_mode",	&ColorSinkSt::set_color_mode);
+#else
+	py::class_<ColorSinkMt, BaseSinkMt, std::shared_ptr<ColorSinkMt>>(sinks, "color_sink_mt")
+		.def(py::init(
+			[](py::object, ColorMode inMode)
+			{
+				// TODO: Implementation constructure function
+			}))
 
-	py::class_<StdoutColorSinkMt, ColorSinkMt, std::shared_ptr<StdoutColorSinkMt>>(m, "stdout_color_sink_mt")
+		.def("set_color", &ColorSinkMt::set_color)
+		.def("set_color_mode", &ColorSinkMt::set_color_mode);
+
+	py::class_<ColorSinkSt, BaseSinkSt, std::shared_ptr<ColorSinkSt>>(sinks, "color_sink_st")
+		.def(py::init(
+			[](py::object, ColorMode inMode)
+			{
+				// TODO: Implementation constructure function
+			}))
+
+		.def("set_color", &ColorSinkSt::set_color)
+		.def("set_color_mode", &ColorSinkSt::set_color_mode);
+#endif
+
+	py::class_<StdoutColorSinkMt, ColorSinkMt, std::shared_ptr<StdoutColorSinkMt>>(sinks, "stdout_color_sink_mt")
 		.def(py::init<ColorMode>(), py::arg("inMode") = ColorMode::automatic);
 
-	py::class_<StdoutColorSinkSt, ColorSinkSt, std::shared_ptr<StdoutColorSinkSt>>(m, "stdout_color_sink_st")
+	py::class_<StdoutColorSinkSt, ColorSinkSt, std::shared_ptr<StdoutColorSinkSt>>(sinks, "stdout_color_sink_st")
+		.def(py::init<ColorMode>(), py::arg("inMode") = ColorMode::automatic);
+
+	py::class_<StdErrColorSinkMt, ColorSinkMt, std::shared_ptr<StdErrColorSinkMt>>(sinks, "stderr_color_sink_mt")
+		.def(py::init<ColorMode>(), py::arg("inMode") = ColorMode::automatic);
+
+	py::class_<StdErrColorSinkSt, ColorSinkSt, std::shared_ptr<StdErrColorSinkSt>>(sinks, "stderr_color_sink_st")
 		.def(py::init<ColorMode>(), py::arg("inMode") = ColorMode::automatic);
 
 
