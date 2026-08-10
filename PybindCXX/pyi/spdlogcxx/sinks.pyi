@@ -1,6 +1,8 @@
 from . import level, color_mode, log_msg, formatter
 
 from types import CapsuleType
+from typing import Any, Callable, ClassVar
+from enum import Enum
 
 class sink:
 
@@ -17,9 +19,32 @@ class sink:
 
 
 
+class async_sink(sink):
+	class overflow_policy(Enum):
+		block = ...
+		overrun_oldest = ...
+		discard_new = ...
+
+	class config:
+		queue_size: int = ...
+		policy: async_sink.overflow_policy = ...
+		sinks: list[sink] = ...
+		on_thread_start: Callable[[], None] | None = ...
+		on_thread_stop: Callable[[], None] | None = ...
+		custom_err_handler: Callable[[str], None] | None = ...
+
+	@staticmethod
+	def create_with(inSinkType: type[sink], *inArgs: Any, **inWkArgs: Any) -> async_sink: ...
+
+	default_queue_size: ClassVar[int] = ...
+	max_queue_size: ClassVar[int] = ...
+
+
+
 class base_sink_mt(sink):
 
-	def __init__(self) -> None: ...
+	def __init__(self) -> None:
+		self.formatter_: formatter = ...
 
 	def sink_it_(self, inMessage: log_msg) -> None: 
 		''' 
@@ -48,12 +73,11 @@ class base_sink_mt(sink):
 		This function has default implementation.
 		'''
 		...
-
-	formatter_: formatter = ...
 
 class base_sink_st(sink):
 
-	def __init__(self) -> None: ...
+	def __init__(self) -> None:
+		self.formatter_: formatter = ...
 
 	def sink_it_(self, inMessage: log_msg) -> None: 
 		''' 
@@ -82,8 +106,6 @@ class base_sink_st(sink):
 		This function has default implementation.
 		'''
 		...
-
-	formatter_: formatter = ...
 
 
 

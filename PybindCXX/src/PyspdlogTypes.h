@@ -1,20 +1,18 @@
 #pragma once
 
-#include <pybind11/pybind11.h>
-
 #include <spdlog/spdlog.h>
 
+#include <spdlog/sinks/async_sink.h>
 #include <spdlog/sinks/basic_file_sink.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
 
-// Namespace
-namespace py = pybind11;
+
 
 // Spdlog names
 // Structures
 // root namespace
-using Level 			= spdlog::level;
-using ColorMode 		= spdlog::color_mode;
+using ELevel 			= spdlog::level;
+using EColorMode 		= spdlog::color_mode;
 
 using SourceLoc 		= spdlog::source_loc;
 using LogMsg 			= spdlog::details::log_msg;
@@ -40,6 +38,10 @@ using BaseSinkSt 		= spdlog::sinks::base_sink<spdlog::details::null_mutex>;
 	using ColorSinkMt 	= spdlog::sinks::ansicolor_sink<std::mutex>;
 	using ColorSinkSt 	= spdlog::sinks::ansicolor_sink<spdlog::details::null_mutex>;
 #endif
+
+using AsyncSink = spdlog::sinks::async_sink;
+using EAsyncOverflowPolicy = AsyncSink::overflow_policy;
+using AsyncConfig = AsyncSink::config;
 
 // File sinks
 using BasicFileSinkMt 	= spdlog::sinks::basic_file_sink_mt;

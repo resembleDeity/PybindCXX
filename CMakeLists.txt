@@ -14,8 +14,9 @@ set(vendor_directory ${project_directory}/vendor)
 set(fmt_directory ${vendor_directory}/fmt)
 
 pybind11_add_module(spdlogcxx 
-	${CMAKE_PROJECT_NAME}/src/PyspdlogTypes.h
 	${CMAKE_PROJECT_NAME}/src/Pyspdlog.cpp
+	${CMAKE_PROJECT_NAME}/src/PyspdlogFunctions.h
+	${CMAKE_PROJECT_NAME}/src/PyspdlogTypes.h
 )
 set(spdlog_directory ${vendor_directory}/spdlog)
 set(spdlog_sources
@@ -58,9 +59,9 @@ target_sources(spdlogcxx PRIVATE
 
 
 pybind11_add_module(yamlcxx 
-	${CMAKE_PROJECT_NAME}/src/PyyamlTypes.h
-	${CMAKE_PROJECT_NAME}/src/PyyamlFunctions.h
 	${CMAKE_PROJECT_NAME}/src/Pyyaml.cpp
+	${CMAKE_PROJECT_NAME}/src/PyyamlFunctions.h
+	${CMAKE_PROJECT_NAME}/src/PyyamlTypes.h
 )
 target_compile_definitions(yamlcxx PRIVATE YAML_CPP_STATIC_DEFINE)
 set(yaml_directory ${CMAKE_CURRENT_SOURCE_DIR}/${CMAKE_PROJECT_NAME}/vendor/yaml-cpp)
@@ -109,11 +110,13 @@ target_sources(yamlcxx PRIVATE
 )
 
 source_group("" FILES
-	${CMAKE_PROJECT_NAME}/src/PyspdlogTypes.h
 	${CMAKE_PROJECT_NAME}/src/Pyspdlog.cpp
-	${CMAKE_PROJECT_NAME}/src/PyyamlTypes.h
-	${CMAKE_PROJECT_NAME}/src/PyyamlFunctions.h
+	${CMAKE_PROJECT_NAME}/src/PyspdlogFunctions.h
+	${CMAKE_PROJECT_NAME}/src/PyspdlogTypes.h
+	
 	${CMAKE_PROJECT_NAME}/src/Pyyaml.cpp
+	${CMAKE_PROJECT_NAME}/src/PyyamlFunctions.h
+	${CMAKE_PROJECT_NAME}/src/PyyamlTypes.h
 )
 
 source_group("source" FILES 

@@ -1,4 +1,7 @@
+#include "PyspdlogFunctions.h"
 #include "PyspdlogTypes.h"
+
+#include <pybind11/native_enum.h>
 
 
 
@@ -136,22 +139,26 @@ public:
 
 
 
+namespace py = pybind11;
+
 PYBIND11_MODULE(spdlogcxx, m)
 {
-	py::enum_<Level>(m, "level")
-		.value("trace",		Level::trace)
-		.value("debug",		Level::debug)
-		.value("info",		Level::info)
-		.value("warn",		Level::warn)
-		.value("err",		Level::err)
-		.value("critical",	Level::critical)
-		.value("off",		Level::off)
-		.value("n_levels",	Level::n_levels);
+	py::native_enum<ELevel>(m, "level", "enum.IntEnum")
+		.value("trace",		ELevel::trace)
+		.value("debug",		ELevel::debug)
+		.value("info",		ELevel::info)
+		.value("warn",		ELevel::warn)
+		.value("err",		ELevel::err)
+		.value("critical",	ELevel::critical)
+		.value("off",		ELevel::off)
+		.value("n_levels",	ELevel::n_levels)
+		.finalize();
 
-	py::enum_<ColorMode>(m, "color_mode")
-		.value("always",	ColorMode::always)
-		.value("automatic", ColorMode::automatic)
-		.value("never",		ColorMode::never);
+	py::native_enum<EColorMode>(m, "color_mode", "enum.Enum")
+		.value("always",	EColorMode::always)
+		.value("automatic", EColorMode::automatic)
+		.value("never",		EColorMode::never)
+		.finalize();
 
 	py::class_<SourceLoc>(m, "source_loc")
 		.def(py::init<>())
@@ -170,15 +177,15 @@ PYBIND11_MODULE(spdlogcxx, m)
 
 	py::class_<LogMsg>(m, "log_msg")
 		.def(py::init<>())
-		.def(py::init<TimePoint, const SourceLoc&, StringView, Level, StringView>(),
+		.def(py::init<TimePoint, const SourceLoc&, StringView, ELevel, StringView>(),
 			py::arg("inLogTime"), py::arg("inLocation"), 
 			py::arg("inLoggerName"), py::arg("inLevel"), py::arg("inMessage")
 		)
-		.def(py::init<const SourceLoc&, StringView, Level, StringView>(),
+		.def(py::init<const SourceLoc&, StringView, ELevel, StringView>(),
 			py::arg("inLocation"), 
 			py::arg("inLoggerName"), py::arg("inLevel"), py::arg("inMessage")
 		)
-		.def(py::init<StringView, Level, StringView>(),
+		.def(py::init<StringView, ELevel, StringView>(),
 			py::arg("inLoggerName"), py::arg("inLevel"), py::arg("inMessage")
 		)
 
@@ -197,13 +204,7 @@ PYBIND11_MODULE(spdlogcxx, m)
 	py::class_<Formatter, PyFormatter>(m, "formatter")
 		.def(py::init<>())
 
-		.def("format",
-			[](Formatter& self, const LogMsg& inMessage) -> std::string
-			{
-				spdlog::memory_buf_t formatted;
-				self.format(inMessage, formatted);
-				return fmt::to_string(formatted);
-			}, py::arg("inMessage"))
+		.def("format", &Formatter_Format, py::arg("inMessage"))
 		.def("clone", &Formatter::clone);
 
 
@@ -242,6 +243,66 @@ PYBIND11_MODULE(spdlogcxx, m)
 
 
 
+#ifdef _WIN32
+	py::class_<ColorSinkMt, BaseSinkMt, std::shared_ptr<ColorSinkMt>>(sinks, "color_sink_mt")
+		.def(py::init<py::capsule, EColorMode>(), py::arg("Handle"), py::arg("inMode"))
+
+		.def("set_color", &ColorSinkMt::set_color)
+		.def("set_color_mode", &ColorSinkMt::set_color_mode);
+
+	py::class_<ColorSinkSt, BaseSinkSt, std::shared_ptr<ColorSinkSt>>(sinks, "color_sink_st")
+		.def(py::init<py::capsule, EColorMode>(), py::arg("Handle"), py::arg("inMode"))
+
+		.def("set_color", &ColorSinkSt::set_color)
+		.def("set_color_mode", &ColorSinkSt::set_color_mode);
+#else
+	py::class_<ColorSinkMt, BaseSinkMt, std::shared_ptr<ColorSinkMt>>(sinks, "color_sink_mt")
+		.def(py::init(
+			[](py::object, EColorMode inMode)
+			{
+				// TODO: Implementation constructure function
+			}))
+
+		.def("set_color", &ColorSinkMt::set_color)
+		.def("set_color_mode", &ColorSinkMt::set_color_mode);
+
+	py::class_<ColorSinkSt, BaseSinkSt, std::shared_ptr<ColorSinkSt>>(sinks, "color_sink_st")
+		.def(py::init(
+			[](py::object, EColorMode inMode)
+			{
+				// TODO: Implementation constructure function
+			}))
+
+		.def("set_color", &ColorSinkSt::set_color)
+		.def("set_color_mode", &ColorSinkSt::set_color_mode);
+#endif
+
+
+	py::class_<AsyncSink, Sink, std::shared_ptr<AsyncSink>> asyncSink(sinks, "async_sink");
+	asyncSink
+		.def_property_readonly_static("default_queue_size", &AsyncSink_GetDefaultQueueSize)
+		.def_property_readonly_static("max_queue_size",		&AsyncSink_GetMaxQueueSize)
+		
+		.def_static("create_with", &AsyncSink_With);
+
+	py::native_enum<EAsyncOverflowPolicy>(asyncSink, "overflow_policy", "enum.Enum")
+		.value("block",				EAsyncOverflowPolicy::block)
+		.value("overrun_oldest",	EAsyncOverflowPolicy::overrun_oldest)
+		.value("discard_new",		EAsyncOverflowPolicy::discard_new)
+		.finalize();
+
+	py::class_<AsyncConfig>(asyncSink, "config")
+		.def_readwrite("queue_size",			&AsyncConfig::queue_size)
+		.def_readwrite("policy",				&AsyncConfig::policy)
+		.def_readwrite("sinks",					&AsyncConfig::sinks)
+		.def_readwrite("on_thread_start",		&AsyncConfig::on_thread_start)
+		.def_readwrite("on_thread_stop",		&AsyncConfig::on_thread_stop)
+		.def_readwrite("custom_err_handler",	&AsyncConfig::custom_err_handler);
+	
+	asyncSink.def(py::init<AsyncConfig>(), py::arg("inAsyncConfig"));
+
+
+
 	py::class_<BasicFileSinkMt, BaseSinkMt, std::shared_ptr<BasicFileSinkMt>>(sinks, "basic_file_sink_mt")
 		.def(py::init<const std::string&, bool>(), py::arg("inFileName"), py::arg("inbTruncate") = false)
 		
@@ -255,70 +316,25 @@ PYBIND11_MODULE(spdlogcxx, m)
 		.def("truncate", &BasicFileSinkSt::truncate);
 
 
-#ifdef _WIN32
-	py::class_<ColorSinkMt, BaseSinkMt, std::shared_ptr<ColorSinkMt>>(sinks, "color_sink_mt")
-		.def(py::init<py::capsule, ColorMode>(), py::arg("Handle"), py::arg("inMode"))
-
-		.def("set_color",		&ColorSinkMt::set_color)
-		.def("set_color_mode",	&ColorSinkMt::set_color_mode);
-
-	py::class_<ColorSinkSt, BaseSinkSt, std::shared_ptr<ColorSinkSt>>(sinks, "color_sink_st")
-		.def(py::init<py::capsule, ColorMode>(), py::arg("Handle"), py::arg("inMode"))
-
-		.def("set_color",		&ColorSinkSt::set_color)
-		.def("set_color_mode",	&ColorSinkSt::set_color_mode);
-#else
-	py::class_<ColorSinkMt, BaseSinkMt, std::shared_ptr<ColorSinkMt>>(sinks, "color_sink_mt")
-		.def(py::init(
-			[](py::object, ColorMode inMode)
-			{
-				// TODO: Implementation constructure function
-			}))
-
-		.def("set_color", &ColorSinkMt::set_color)
-		.def("set_color_mode", &ColorSinkMt::set_color_mode);
-
-	py::class_<ColorSinkSt, BaseSinkSt, std::shared_ptr<ColorSinkSt>>(sinks, "color_sink_st")
-		.def(py::init(
-			[](py::object, ColorMode inMode)
-			{
-				// TODO: Implementation constructure function
-			}))
-
-		.def("set_color", &ColorSinkSt::set_color)
-		.def("set_color_mode", &ColorSinkSt::set_color_mode);
-#endif
 
 	py::class_<StdoutColorSinkMt, ColorSinkMt, std::shared_ptr<StdoutColorSinkMt>>(sinks, "stdout_color_sink_mt")
-		.def(py::init<ColorMode>(), py::arg("inMode") = ColorMode::automatic);
+		.def(py::init<EColorMode>(), py::arg("inMode") = EColorMode::automatic);
 
 	py::class_<StdoutColorSinkSt, ColorSinkSt, std::shared_ptr<StdoutColorSinkSt>>(sinks, "stdout_color_sink_st")
-		.def(py::init<ColorMode>(), py::arg("inMode") = ColorMode::automatic);
+		.def(py::init<EColorMode>(), py::arg("inMode") = EColorMode::automatic);
 
 	py::class_<StdErrColorSinkMt, ColorSinkMt, std::shared_ptr<StdErrColorSinkMt>>(sinks, "stderr_color_sink_mt")
-		.def(py::init<ColorMode>(), py::arg("inMode") = ColorMode::automatic);
+		.def(py::init<EColorMode>(), py::arg("inMode") = EColorMode::automatic);
 
 	py::class_<StdErrColorSinkSt, ColorSinkSt, std::shared_ptr<StdErrColorSinkSt>>(sinks, "stderr_color_sink_st")
-		.def(py::init<ColorMode>(), py::arg("inMode") = ColorMode::automatic);
+		.def(py::init<EColorMode>(), py::arg("inMode") = EColorMode::automatic);
 
 
 
 	py::class_<Logger>(m, "logger")
 		.def(py::init<std::string>(),			py::arg("inName"))
 		.def(py::init<std::string, SinkPtr>(),	py::arg("inName"), py::arg("inSink"))
-		.def(py::init
-		(
-			[](std::string inName, const py::iterable& inSinks)
-			{
-				std::vector<SinkPtr> sinks;
-				for (auto& it : inSinks)
-				{
-					sinks.push_back(it.cast<SinkPtr>());
-				}
-
-				return new Logger(std::move(inName), sinks.begin(), sinks.end());
-			}), py::arg("inName"), py::arg("inSinks")
-		)
+		.def(py::init(&Logger_Init), py::arg("inName"), py::arg("inSinks"))
 
 		.def("set_level",	&Logger::set_level)
 		.def("trace",		static_cast<void(Logger::*)(StringView)>(&Logger::trace))

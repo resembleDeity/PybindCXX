@@ -1,7 +1,9 @@
-#include "PyyamlTypes.h"
 #include "PyyamlFunctions.h"
+#include "PyyamlTypes.h"
 
 
+
+namespace py = pybind11;
 
 PYBIND11_MODULE(yamlcxx, m)
 {
@@ -16,6 +18,7 @@ PYBIND11_MODULE(yamlcxx, m)
 		.def("__rshift__",	&Node_RShift, py::arg("inObject"))
 		.def("__getitem__", &Node_GetItem<const std::string&>, py::arg("inKey"))
 		.def("__getitem__", &Node_GetItem<int>, py::arg("inKey"));
+
 
 
 	py::enum_<EmitterManip>(m, "EMITTER_MANIP")
@@ -110,4 +113,5 @@ PYBIND11_MODULE(yamlcxx, m)
 		.def("__lshift__",	&Emitter_LShift<const py::object&>,		py::arg("inObject"),	py::return_value_policy::reference_internal);
 	
 	m.def("Load", py::overload_cast<const std::string&>(&YAML::Load));
+	m.def("LoadFile", &YAML::LoadFile);
 }

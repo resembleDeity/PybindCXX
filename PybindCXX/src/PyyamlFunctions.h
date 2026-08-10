@@ -3,7 +3,7 @@
 #include <pybind11/pybind11.h>
 #include <yaml-cpp/yaml.h>
 
-inline YAML::Emitter& operator<<(YAML::Emitter& inEmitter, const pybind11::object& inObject)
+static inline YAML::Emitter& operator<<(YAML::Emitter& inEmitter, const pybind11::object& inObject)
 {
 	if (pybind11::isinstance<pybind11::bool_>(inObject))
 	{
@@ -29,26 +29,26 @@ inline YAML::Emitter& operator<<(YAML::Emitter& inEmitter, const pybind11::objec
 	pybind11::pybind11_fail("Object must has \"__yaml_emit__\" function");
 }
 
-inline void operator>>(YAML::Node& inNode, pybind11::object& inObject)
+static inline void operator>>(YAML::Node& inNode, pybind11::object& inObject)
 {
 	if (pybind11::isinstance<pybind11::bool_>(inObject))
 	{
-		inObject = pybind11::cast(inNode.as<bool>());
+		inObject = pybind11::bool_(inNode.as<bool>());
 		return;
 	}
 	else if (pybind11::isinstance<pybind11::int_>(inObject))
 	{
-		inObject = pybind11::cast(inNode.as<int64_t>());
+		inObject = pybind11::int_(inNode.as<int64_t>());
 		return;
 	}
 	else if (pybind11::isinstance<pybind11::float_>(inObject))
 	{
-		inObject = pybind11::cast(inNode.as<float>());
+		inObject = pybind11::float_(inNode.as<float>());
 		return;
 	}
 	else if (pybind11::isinstance<pybind11::str>(inObject))
 	{
-		inObject = pybind11::cast(inNode.as<std::string>());
+		inObject = pybind11::str(inNode.as<std::string>());
 		return;
 	}
 	else if (pybind11::hasattr(inObject, "__yaml_load__"))
@@ -60,29 +60,33 @@ inline void operator>>(YAML::Node& inNode, pybind11::object& inObject)
 	pybind11::pybind11_fail("Object must has \"__yaml_load__\" function");
 }
 
-static void Node_RShift(YAML::Node& self, pybind11::object& inObject)
+
+
+static inline void Node_RShift(YAML::Node& self, pybind11::object& inObject)
 {
 	self >> inObject;
 }
 
 template<typename TKey>
-static YAML::Node Node_GetItem(YAML::Node& self, TKey inKey)
+static inline YAML::Node Node_GetItem(YAML::Node& self, TKey inKey)
 {
 	return self[inKey];
 }
 
-static pybind11::str Emitter_CStr(const YAML::Emitter& self)
+
+
+static inline pybind11::str Emitter_CStr(const YAML::Emitter& self)
 {
 	return pybind11::str(self.c_str());
 }
 
 template<typename TValue>
-static YAML::Emitter& Emitter_LShift(YAML::Emitter& self, TValue inValue)
+static inline YAML::Emitter& Emitter_LShift(YAML::Emitter& self, TValue inValue)
 {
 	return self << inValue;
 }
 
-static void Emitter_LShift_End(YAML::Emitter& self, YAML::EMITTER_MANIP inValue)
+static inline void Emitter_LShift_End(YAML::Emitter& self, YAML::EMITTER_MANIP inValue)
 {
 	self << inValue;
 }

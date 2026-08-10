@@ -2,7 +2,7 @@ from . import sinks
 
 from collections.abc import Iterable
 from datetime import datetime
-from typing import overload
+from typing import overload, Any
 from enum import IntEnum
 
 
@@ -30,15 +30,18 @@ class source_loc:
 	@overload
 	def __init__(self, inFileName: str, inLine: int, inFuncName: str) -> None: ...
 
+	def __init__(self, *inArgs: Any, **inKwArgs: Any) -> None:
+		self.filename: str
+		self.short_filename: str
+		self.line: int
+		self.funcname: str
+
 	def empty(self) -> bool: ...
 
 	@staticmethod
 	def basename(inPath: str) -> str: ...
 
-	filename: str
-	short_filename: str
-	line: int
-	funcname: str
+
 
 class log_msg:
 
@@ -62,15 +65,16 @@ class log_msg:
 		inLoggerName: str, inLevel: level, inMessage: str
 	) -> None: ...
 
-	logger_name: str
-	log_level: level
-	time: datetime
-	thread_id: int
-	source: source_loc
-	payload: str
-
-	color_range_start: int
-	color_range_end: int
+	def __init__(self, *inArgs: Any, **inKwArgs: Any) -> None:
+		self.logger_name: str
+		self.log_level: level
+		self.time: datetime
+		self.thread_id: int
+		self.source: source_loc
+		self.payload: str
+		
+		self.color_range_start: int
+		self.color_range_end: int
 
 
 
