@@ -3,22 +3,29 @@ cmake_minimum_required(VERSION 3.10.0)
 project(PybindCXX VERSION 0.1.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
-find_package(Python3 3.9 REQUIRED COMPONENTS Interpreter Development)
 
 
-add_subdirectory(${CMAKE_PROJECT_NAME}/vendor/pybind11)
 
 set(project_directory ${CMAKE_CURRENT_SOURCE_DIR}/${CMAKE_PROJECT_NAME})
 set(vendor_directory ${project_directory}/vendor)
-
 set(fmt_directory ${vendor_directory}/fmt)
+set(fmt_sources ${fmt_directory}/src/format.cc)
+set(spdlog_directory ${vendor_directory}/spdlog)
+set(yaml_directory ${vendor_directory}/yaml-cpp)
+
+
+
+find_package(Python3 3.9 REQUIRED COMPONENTS Interpreter Development)
+add_subdirectory(${CMAKE_PROJECT_NAME}/vendor/pybind11)
+
+
 
 pybind11_add_module(spdlogcxx 
 	${CMAKE_PROJECT_NAME}/src/Pyspdlog.cpp
 	${CMAKE_PROJECT_NAME}/src/PyspdlogFunctions.h
 	${CMAKE_PROJECT_NAME}/src/PyspdlogTypes.h
 )
-set(spdlog_directory ${vendor_directory}/spdlog)
+target_compile_options(spdlogcxx PRIVATE /utf-8)
 set(spdlog_sources
     ${spdlog_directory}/src/common.cpp
     ${spdlog_directory}/src/logger.cpp
@@ -53,7 +60,7 @@ target_include_directories(spdlogcxx PRIVATE
 )
 target_sources(spdlogcxx PRIVATE
 	${spdlog_sources}
-	${fmt_directory}/src/format.cc
+	${fmt_sources}
 )
 
 
@@ -64,12 +71,11 @@ pybind11_add_module(yamlcxx
 	${CMAKE_PROJECT_NAME}/src/PyyamlTypes.h
 )
 target_compile_definitions(yamlcxx PRIVATE YAML_CPP_STATIC_DEFINE)
-set(yaml_directory ${CMAKE_CURRENT_SOURCE_DIR}/${CMAKE_PROJECT_NAME}/vendor/yaml-cpp)
-set(yaml-cpp-contrib-sources
+set(yaml_contrib_sources
 	${yaml_directory}/src/contrib/graphbuilder.cpp
 	${yaml_directory}/src/contrib/graphbuilderadapter.cpp
 )
-set(yaml-cpp-sources
+set(yaml_sources
 	${yaml_directory}/src/binary.cpp
 	${yaml_directory}/src/convert.cpp
 	${yaml_directory}/src/depthguard.cpp
@@ -105,9 +111,11 @@ target_include_directories(yamlcxx PRIVATE
 	${yaml_directory}/include
 )
 target_sources(yamlcxx PRIVATE
-	${yaml-cpp-contrib-sources}
-	${yaml-cpp-sources}
+	${yaml_contrib_sources}
+	${yaml_sources}
 )
+
+
 
 source_group("" FILES
 	${CMAKE_PROJECT_NAME}/src/Pyspdlog.cpp
@@ -121,7 +129,7 @@ source_group("" FILES
 
 source_group("source" FILES 
 	${spdlog_sources}
-	${fmt_directory}/src/format.cc
+	${fmt_sources}
 	${yaml-cpp-sources}
 	${yaml-cpp-contrib-sources}
 )

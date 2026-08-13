@@ -1,0 +1,15 @@
+[build-system]
+requires = [
+	"setuptools>=42",
+	"wheel",
+	"pybind11>=3.0"
+]
+build-backend = "setuptools.build_meta"
+
+[tool.cibuildwheel]
+build = "cp39-* cp310-* cp311-* cp312-* cp313-*"
+archs = "auto"
+skip = "*-musllinux_*"
+
+[tool.cibuildwheel.windows]
+repair-wheel-command = "delvewheel repair --namespace-pkg spdlogcxx -w {dest_dir} {wheel}"

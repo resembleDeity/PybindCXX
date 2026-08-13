@@ -1,4 +1,4 @@
-#include "PyspdlogFunctions.h"
+﻿#include "PyspdlogFunctions.h"
 #include "PyspdlogTypes.h"
 
 #include <pybind11/native_enum.h>
@@ -239,7 +239,7 @@ PYBIND11_MODULE(spdlogcxx, m)
 		.def("set_pattern_",	&PublicBaseSinkSt::set_pattern_)
 		.def("set_formatter_",	&PublicBaseSinkSt::set_formatter_)
 		
-		.def_readwrite("formatter_", &PublicBaseSinkSt::formatter_);;
+		.def_readwrite("formatter_", &PublicBaseSinkSt::formatter_);
 
 
 
