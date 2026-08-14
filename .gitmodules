@@ -1,10 +1,10 @@
-[submodule "PybindCXX/vendor/spdlog"]
-	path = PybindCXX/vendor/spdlog
+[submodule "PybindCXX/spdlogcxx/spdlog"]
+	path = PybindCXX/spdlogcxx/spdlog
 	url = https://github.com/gabime/spdlog.git
 	branch = v2.x
-[submodule "PybindCXX/vendor/pybind11"]
-	path = PybindCXX/vendor/pybind11
+[submodule "PybindCXX/pybind11"]
+	path = PybindCXX/pybind11
 	url = https://github.com/pybind/pybind11.git
-[submodule "PybindCXX/vendor/yaml-cpp"]
-	path = PybindCXX/vendor/yaml-cpp
+[submodule "PybindCXX/yamlcxx/yaml-cpp"]
+	path = PybindCXX/yamlcxx/yaml-cpp
 	url = https://github.com/jbeder/yaml-cpp.git
